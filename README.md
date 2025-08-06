@@ -24,7 +24,7 @@ Password: admin
 Check "Demo Data"
 ```
 
-### 3. Activate the inventory & targum modules
+### 3. Activate the ecommerce & targum modules
 
 - Open Menu => Apps
 - Install "Ecommerce" & "Targum AI"

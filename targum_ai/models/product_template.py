@@ -17,12 +17,11 @@ class ProductTemplate(models.Model):
         return product
 
     def write(self, vals):
-        print(f"=== PRODUCT WRITE CALLED ===")
-        print(f"Product write called with vals: {vals}")
+        print(f"Product updated: {vals}")
         result = super(ProductTemplate, self).write(vals)
         if not self.env.context.get("skip_webhook"):
             for product in self:
-                print(f"Calling webhook for product: {product.name}")
+                print(f"Sending product to Targum: {product.name}")
                 self._send_webhook(product, "update")
         return result
 
@@ -39,10 +38,6 @@ class ProductTemplate(models.Model):
                 .get_param("targum_ai.instance_url")
             )
 
-            print(
-                f"Webhook config - secret: {bool(integration_secret)}, url: {targum_instance_url}"
-            )
-
             if not integration_secret or not targum_instance_url:
                 print("Webhook not configured - missing secret or instance URL")
                 return
@@ -53,13 +48,9 @@ class ProductTemplate(models.Model):
                 )
 
             products_api_url = f"{targum_instance_url.rstrip('/')}/api/products"
-            print(
-                f"Original URL: {self.env['ir.config_parameter'].sudo().get_param('targum_ai.instance_url')}"
-            )
-
             product_data = ProductSerializer.build_webhook_data(product, action)
 
-            print(f"Sending webhook to: {products_api_url} with data: {product_data}")
+            print(f"Sending product to: {products_api_url} with data: {product_data}")
 
             headers = {
                 "Content-Type": "application/json",
@@ -69,7 +60,9 @@ class ProductTemplate(models.Model):
             response = requests.post(
                 products_api_url, json=product_data, headers=headers, timeout=5
             )
-            print(f"Webhook response: {response.status_code}")
+
+            print(f"Targum response: {response.status_code}")
+
             if response.status_code >= 400:
                 print(
                     f"Webhook failed with status {response.status_code}: {response.text}"

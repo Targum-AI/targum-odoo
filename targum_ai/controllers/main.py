@@ -65,26 +65,13 @@ class TargumController(http.Controller):
                 raise ValueError(f"Missing required field: {field}")
 
         merchant_id = product_data["merchant_id"]
-        print(
-            f"Processing product with merchant_id: {merchant_id} (type: {type(merchant_id)})"
-        )
+        print(f"Processing product with merchant_id: {merchant_id})")
 
-        # Search for existing product by Odoo ID
         product_template = (
             request.env["product.template"]
             .sudo()
             .search([("id", "=", merchant_id)], limit=1)
         )
-
-        print(f"Search result: Found {len(product_template)} products")
-        if product_template:
-            print(
-                f"Found existing product: ID={product_template.id}, Name='{product_template.name}'"
-            )
-        else:
-            print(f"No existing product found with ID={merchant_id}")
-            all_products = request.env["product.template"].sudo().search([], limit=5)
-            print(f"Sample existing products: {[(p.id, p.name) for p in all_products]}")
 
         description_text = (
             product_data.get("description", {}).get("en", "")
@@ -102,7 +89,7 @@ class TargumController(http.Controller):
 
         if product_template:
             product_template.with_context(skip_webhook=True).write(vals)
-            print(f"Updated product with Odoo ID {product_data['merchant_id']}")
+            print(f"Updated product with merchant_id {product_data['merchant_id']}")
             return {"action": "updated", "product_id": product_template.id}
         else:
             new_product = (
@@ -111,5 +98,5 @@ class TargumController(http.Controller):
                 .with_context(skip_webhook=True)
                 .create(vals)
             )
-            print(f"Created new product with Odoo ID {new_product.id}")
+            print(f"Created new product with merchant_id {new_product.id}")
             return {"action": "created", "product_id": new_product.id}

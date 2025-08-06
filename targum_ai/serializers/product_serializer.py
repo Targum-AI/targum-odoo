@@ -85,22 +85,6 @@ class ProductSerializer:
         return product_data
 
     @staticmethod
-    def serialize_products_list(products, **kwargs):
-        return [
-            ProductSerializer.serialize_product(product, **kwargs)
-            for product in products
-        ]
-
-    @staticmethod
-    def build_api_response(products, **kwargs):
-        if hasattr(products, "__iter__") and not hasattr(products, "_name"):
-            product_list = ProductSerializer.serialize_products_list(products, **kwargs)
-        else:
-            product_list = [ProductSerializer.serialize_product(products, **kwargs)]
-
-        return {"products": product_list}
-
-    @staticmethod
     def build_webhook_data(product, action, **kwargs):
         webhook_kwargs = {"include_variants": False, "include_images": False, **kwargs}
 
