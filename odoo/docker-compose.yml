@@ -1,0 +1,25 @@
+services:
+  web:
+    image: odoo:17.0
+    depends_on:
+      - db
+    ports:
+      - "8069:8069"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ../targum_ai:/mnt/extra-addons/targum_ai
+      - ./etc:/etc/odoo
+      - odoo-web-data:/var/lib/odoo
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_PASSWORD=odoo
+      - POSTGRES_USER=odoo
+      - POSTGRES_DB=postgres
+    volumes:
+      - odoo-db-data:/var/lib/postgresql/data
+volumes:
+  odoo-db-data:
+  odoo-web-data:
+

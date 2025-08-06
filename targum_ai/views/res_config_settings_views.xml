@@ -1,0 +1,43 @@
+<odoo>
+    <record id="res_config_settings_view_form" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.targum</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <div class="app_settings_block" data-string="Targum AI" string="Targum AI">
+                    <h2>Targum AI Integration</h2>
+                    <div class="row mt16 o_settings_container">
+                        <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="o_setting_right_pane">
+                                <label for="integration_secret"/>
+                                <field name="integration_secret" password="True"/>
+                                <div class="text-muted">
+                                    Secret key for authenticating webhooks to Targum
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="o_setting_right_pane">
+                                <label for="targum_instance_url"/>
+                                <field name="targum_instance_url"/>
+                                <div class="text-muted">
+                                    Base URL of your Targum instance (e.g., https://api.targum.ai)
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="o_setting_right_pane">
+                                <label for="api_key"/>
+                                <field name="api_key" widget="CopyClipboardChar"/>
+                                <div class="text-muted">
+                                    Auto-generated API key for Targum AI integration
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </xpath>
+        </field>
+    </record>
+</odoo>

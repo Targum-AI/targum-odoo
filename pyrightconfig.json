@@ -1,0 +1,10 @@
+{
+  "reportMissingImports": "warning",
+  "reportMissingModuleSource": "warning", 
+  "reportAttributeAccessIssue": "none",
+  "reportUnknownMemberType": "none",
+  "reportUnknownVariableType": "none",
+  "ignore": ["**/odoo/**"],
+  "stubPath": "",
+  "extraPaths": []
+}
