@@ -100,3 +100,57 @@ class TargumController(http.Controller):
             )
             print(f"Created new product with merchant_id {new_product.id}")
             return {"action": "created", "product_id": new_product.id}
+
+    @http.route('/targum_ai/sync_all_products', type='json', auth='user', methods=['POST'])
+    def sync_all_products(self):
+        try:
+            batch_size = 50
+            products = request.env["product.template"].search([])
+            total_products = len(products)
+            
+            if total_products == 0:
+                return {
+                    'type': 'ir.actions.client',
+                    'tag': 'display_notification',
+                    'params': {
+                        'message': 'No products found to sync.',
+                        'type': 'warning',
+                    }
+                }
+            
+            synced_count = 0
+            failed_count = 0
+            
+            for i in range(0, total_products, batch_size):
+                batch = products[i:i + batch_size]
+                for product in batch:
+                    try:
+                        product.with_context(skip_webhook=False)._send_webhook(product, "update")
+                        synced_count += 1
+                    except Exception as e:
+                        failed_count += 1
+                        print(f"Failed to sync product {product.name}: {str(e)}")
+                
+                request.env.cr.commit()
+            
+            message = f"Sync completed: {synced_count} products synced"
+            if failed_count > 0:
+                message += f", {failed_count} failed"
+                
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'message': message,
+                    'type': 'success' if failed_count == 0 else 'warning',
+                }
+            }
+        except Exception as e:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'message': f'Error during sync: {str(e)}',
+                    'type': 'danger',
+                }
+            }

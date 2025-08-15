@@ -1,6 +1,6 @@
 {
     "name": "Targum AI Integration",
-    "version": "17.0.0.1.7",
+    "version": "17.0.0.1.8",
     "summary": "Import products to Targum AI for enrichment and sync back to Odoo",
     "description": """
 Targum AI Integration

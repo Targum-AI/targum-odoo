@@ -1,4 +1,54 @@
 <odoo>
+    <record id="sync_all_products_server_action" model="ir.actions.server">
+        <field name="name">Sync All Products to Targum</field>
+        <field name="model_id" ref="product.model_product_template"/>
+        <field name="state">code</field>
+        <field name="code">
+batch_size = 50
+products = env["product.template"].search([])
+total_products = len(products)
+
+if total_products == 0:
+    action = {
+        'type': 'ir.actions.client',
+        'tag': 'display_notification',
+        'params': {
+            'message': 'No products found to sync.',
+            'type': 'warning',
+        }
+    }
+else:
+    synced_count = 0
+    failed_count = 0
+    
+    for i in range(0, total_products, batch_size):
+        batch = products[i:i + batch_size]
+        
+        for product in batch:
+            try:
+                product.with_context(skip_webhook=False)._send_webhook(product, "update")
+                synced_count += 1
+            except Exception as e:
+                failed_count += 1
+                print(f"Failed to sync product {product.name}: {str(e)}")
+        
+        env.cr.commit()
+    
+    message = f"Sync completed: {synced_count} products synced"
+    if failed_count > 0:
+        message += f", {failed_count} failed"
+        
+    action = {
+        'type': 'ir.actions.client',
+        'tag': 'display_notification',
+        'params': {
+            'message': message,
+            'type': 'success' if failed_count == 0 else 'warning',
+        }
+    }
+        </field>
+    </record>
+
     <record id="res_config_settings_view_form" model="ir.ui.view">
         <field name="name">res.config.settings.view.form.inherit.targum</field>
         <field name="model">res.config.settings</field>
@@ -32,6 +82,14 @@
                                 <field name="api_key" widget="CopyClipboardChar"/>
                                 <div class="text-muted">
                                     Auto-generated API key for Targum AI integration
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 o_setting_box">
+                            <div class="o_setting_right_pane">
+                                <button name="%(sync_all_products_server_action)d" string="Sync All Products to Targum" type="action" class="btn btn-primary" confirm="This will sync all products to Targum. For large catalogs, this may take several minutes. Please do not close this page during the sync. Continue?"/>
+                                <div class="text-muted">
+                                    Send all existing products to Targum
                                 </div>
                             </div>
                         </div>
