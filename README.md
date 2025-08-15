@@ -27,7 +27,7 @@ Check "Demo Data"
 ### 3. Activate the ecommerce & targum modules
 
 - Open Menu => Apps
-- Install "Ecommerce" & "Targum AI"
+- Install "Targum AI"
 
 ### 4. Settings
 
@@ -36,7 +36,7 @@ Check "Demo Data"
 - Set `Targum Instance URL` to `http://localhost:8000` (or whatever your targum url is)
 - Copy the generated `API key`
 - Go to Targum Nova, create an `Integration`, paste the `API key` into `Merchant secret`.
-- Set `Webhook URL` to `TODO` and save.
+- Set `Webhook URL` to `http://localhost:8069/targum_ai/products` and save.
 - Open the created `Integration`, click the `options` icon and `Generate API token`. Copy that to Odoo settings under `Integration Secret` & save.
 
 ### 5. Creating a new product
