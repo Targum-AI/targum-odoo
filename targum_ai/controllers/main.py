@@ -87,11 +87,11 @@ class TargumController(http.Controller):
 
         vals = {
             "name": name_text,
-            "website_description": description_text,
+            "description_sale": description_text,
         }
 
         if product_template:
-            product_template.with_context(skip_webhook=True).write(vals)
+            product_template.with_context(skip_webhook=True, skip_html_sanitize=True).write(vals)
             self._process_product_attributes(product_data, product_template)
             self._process_product_categories(product_data, product_template)
             self._process_product_keywords(product_data, product_template)
@@ -101,7 +101,7 @@ class TargumController(http.Controller):
             new_product = (
                 request.env["product.template"]
                 .sudo()
-                .with_context(skip_webhook=True)
+                .with_context(skip_webhook=True, skip_html_sanitize=True)
                 .create(vals)
             )
             self._process_product_attributes(product_data, new_product)
