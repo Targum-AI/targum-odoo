@@ -94,6 +94,7 @@ class TargumController(http.Controller):
             product_template.with_context(skip_webhook=True).write(vals)
             self._process_product_attributes(product_data, product_template)
             self._process_product_categories(product_data, product_template)
+            self._process_product_keywords(product_data, product_template)
             print(f"Updated product with merchant_id {product_data['merchant_id']}")
             return {"action": "updated", "product_id": product_template.id}
         else:
@@ -105,6 +106,7 @@ class TargumController(http.Controller):
             )
             self._process_product_attributes(product_data, new_product)
             self._process_product_categories(product_data, new_product)
+            self._process_product_keywords(product_data, new_product)
             print(f"Created new product with merchant_id {new_product.id}")
             return {"action": "created", "product_id": new_product.id}
 
@@ -250,6 +252,47 @@ class TargumController(http.Controller):
                 )
         except Exception:
             pass
+
+    def _process_product_keywords(self, product_data, product_template):
+        """Process keywords and create/assign Product Template Tags"""
+        if "keywords" not in product_data:
+            return
+
+        keywords = product_data["keywords"]
+        if not keywords:
+            return
+
+        tag_ids = []
+        for keyword_data in keywords:
+            keyword = keyword_data.get("keyword", "")
+            if not keyword or not keyword.strip():
+                continue
+
+            try:
+                tag = (
+                    request.env["product.tag"]
+                    .sudo()
+                    .search([("name", "=ilike", keyword.strip())], limit=1)
+                )
+
+                if not tag:
+                    tag = (
+                        request.env["product.tag"]
+                        .sudo()
+                        .create({"name": keyword.strip()})
+                    )
+
+                tag_ids.append(tag.id)
+            except Exception as e:
+                print(f"Error processing tag '{keyword}': {str(e)}")
+                continue
+
+        print(f"Assigning tags: {tag_ids}")
+        if tag_ids:
+            try:
+                product_template.write({"tag_ids": [(6, 0, tag_ids)]})
+            except Exception as e:
+                print(f"Error assigning tags to product: {str(e)}")
 
     @http.route(
         "/targum_ai/sync_all_products", type="json", auth="user", methods=["POST"]
