@@ -10,10 +10,18 @@ class ProductSerializer:
             base_url = request.httprequest.url_root.rstrip("/")
 
         images = []
-        if include_images and product.image_1920 and base_url:
-            images.append(
-                f"{base_url}/web/image/product.template/{product.id}/image_1920"
-            )
+        if include_images and base_url:
+            if product.image_1920:
+                images.append(
+                    f"{base_url}/web/image/product.template/{product.id}/image_1920"
+                )
+
+            if hasattr(product, "product_template_image_ids"):
+                for image in product.product_template_image_ids:
+                    if image.image_1920:
+                        images.append(
+                            f"{base_url}/web/image/product.image/{image.id}/image_1920"
+                        )
 
         category = {
             "id": product.categ_id.id if product.categ_id else None,
@@ -86,7 +94,7 @@ class ProductSerializer:
 
     @staticmethod
     def build_webhook_data(product, action, **kwargs):
-        webhook_kwargs = {"include_variants": False, "include_images": False, **kwargs}
+        webhook_kwargs = {"include_variants": False, "include_images": True, **kwargs}
 
         product_data = ProductSerializer.serialize_product(product, **webhook_kwargs)
 

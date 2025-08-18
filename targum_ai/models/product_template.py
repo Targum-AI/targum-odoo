@@ -13,7 +13,7 @@ class ProductTemplate(models.Model):
         print(f"New product created: {vals}")
         product = super(ProductTemplate, self).create(vals)
         if not self.env.context.get("skip_webhook"):
-            self._send_webhook(product, "create")
+            self._send_product(product, "create")
         return product
 
     def write(self, vals):
@@ -22,10 +22,10 @@ class ProductTemplate(models.Model):
         if not self.env.context.get("skip_webhook"):
             for product in self:
                 print(f"Sending product to Targum: {product.name}")
-                self._send_webhook(product, "update")
+                self._send_product(product, "update")
         return result
 
-    def _send_webhook(self, product, action):
+    def _send_product(self, product, action):
         try:
             integration_secret = (
                 self.env["ir.config_parameter"]

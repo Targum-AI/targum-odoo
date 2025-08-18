@@ -26,7 +26,7 @@ else:
         
         for product in batch:
             try:
-                product.with_context(skip_webhook=False)._send_webhook(product, "update")
+                product.with_context(skip_webhook=False)._send_product(product, "update")
                 synced_count += 1
             except Exception as e:
                 failed_count += 1

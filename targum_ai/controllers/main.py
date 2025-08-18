@@ -78,17 +78,22 @@ class TargumController(http.Controller):
             if isinstance(product_data.get("description"), dict)
             else product_data.get("description", "")
         )
+
+        name_text = (
+            product_data["name"].get("en", "")
+            if isinstance(product_data["name"], dict)
+            else product_data["name"]
+        )
+
         vals = {
-            "name": (
-                product_data["name"].get("en", "")
-                if isinstance(product_data["name"], dict)
-                else product_data["name"]
-            ),
+            "name": name_text,
             "website_description": description_text,
         }
 
         if product_template:
             product_template.with_context(skip_webhook=True).write(vals)
+            self._process_product_attributes(product_data, product_template)
+            self._process_product_categories(product_data, product_template)
             print(f"Updated product with merchant_id {product_data['merchant_id']}")
             return {"action": "updated", "product_id": product_template.id}
         else:
@@ -98,59 +103,208 @@ class TargumController(http.Controller):
                 .with_context(skip_webhook=True)
                 .create(vals)
             )
+            self._process_product_attributes(product_data, new_product)
+            self._process_product_categories(product_data, new_product)
             print(f"Created new product with merchant_id {new_product.id}")
             return {"action": "created", "product_id": new_product.id}
 
-    @http.route('/targum_ai/sync_all_products', type='json', auth='user', methods=['POST'])
+    def _process_product_attributes(self, product_data, product_template):
+        if "brands" in product_data and product_data["brands"]:
+            for brand in product_data["brands"]:
+                brand_name = brand.get("name", "")
+                if brand_name:
+                    self._create_attribute("Brand", brand_name, product_template)
+
+        if "attributes" not in product_data:
+            return
+
+        for attr_data in product_data["attributes"]:
+            attr_name = attr_data.get("name", {})
+            if isinstance(attr_name, dict):
+                attr_name = attr_name.get("en", "")
+
+            if not attr_name:
+                continue
+
+            standardized_value = attr_data.get("standardized_text_value", {})
+            if isinstance(standardized_value, dict):
+                standardized_value = standardized_value.get("en", "")
+
+            value = standardized_value or attr_data.get("value", "")
+            unit = attr_data.get("unit", "")
+
+            if unit:
+                value = f"{value} {unit}"
+
+            if not value or not value.strip():
+                continue
+
+            self._create_attribute(attr_name, value, product_template)
+
+    def _create_attribute(self, attr_name, value, product_template):
+        """Helper method to create product attributes"""
+        attribute = (
+            request.env["product.attribute"]
+            .sudo()
+            .search([("name", "=", attr_name)], limit=1)
+        )
+
+        if not attribute:
+            attribute = (
+                request.env["product.attribute"]
+                .sudo()
+                .create({"name": attr_name, "display_type": "select"})
+            )
+
+        attr_value = (
+            request.env["product.attribute.value"]
+            .sudo()
+            .search(
+                [("attribute_id", "=", attribute.id), ("name", "=", value)], limit=1
+            )
+        )
+
+        if not attr_value:
+            attr_value = (
+                request.env["product.attribute.value"]
+                .sudo()
+                .create({"attribute_id": attribute.id, "name": value})
+            )
+
+        attr_line = product_template.attribute_line_ids.filtered(
+            lambda l: l.attribute_id.id == attribute.id
+        )
+
+        if not attr_line:
+            request.env["product.template.attribute.line"].sudo().create(
+                {
+                    "product_tmpl_id": product_template.id,
+                    "attribute_id": attribute.id,
+                    "value_ids": [(6, 0, [attr_value.id])],
+                }
+            )
+        else:
+            if attr_value.id not in attr_line.value_ids.ids:
+                attr_line.write({"value_ids": [(4, attr_value.id)]})
+
+    def _process_product_categories(self, product_data, product_template):
+        """Process and assign product categories using Odoo's category system"""
+        if "categories" not in product_data:
+            return
+
+        categories = product_data["categories"]
+        if not categories:
+            return
+
+        main_cat_name = None
+        for cat in categories:
+            cat_name = cat.get("name", {})
+            if isinstance(cat_name, dict):
+                cat_name = cat_name.get("en", "")
+            if cat_name and not main_cat_name:
+                main_cat_name = cat_name
+                break
+
+        if main_cat_name:
+            category = (
+                request.env["product.category"]
+                .sudo()
+                .search([("name", "ilike", main_cat_name)], limit=1)
+            )
+
+            if not category:
+                category = (
+                    request.env["product.category"]
+                    .sudo()
+                    .create({"name": main_cat_name})
+                )
+
+            product_template.write({"categ_id": category.id})
+
+        try:
+            public_categories = []
+            for cat in categories:
+                cat_name = cat.get("name", {})
+                if isinstance(cat_name, dict):
+                    cat_name = cat_name.get("en", "")
+
+                if cat_name:
+                    pub_cat = (
+                        request.env["product.public.category"]
+                        .sudo()
+                        .search([("name", "ilike", cat_name)], limit=1)
+                    )
+
+                    if not pub_cat:
+                        pub_cat = (
+                            request.env["product.public.category"]
+                            .sudo()
+                            .create({"name": cat_name})
+                        )
+
+                    public_categories.append(pub_cat.id)
+
+            if public_categories:
+                product_template.write(
+                    {"public_categ_ids": [(6, 0, public_categories)]}
+                )
+        except Exception:
+            pass
+
+    @http.route(
+        "/targum_ai/sync_all_products", type="json", auth="user", methods=["POST"]
+    )
     def sync_all_products(self):
         try:
             batch_size = 50
             products = request.env["product.template"].search([])
             total_products = len(products)
-            
+
             if total_products == 0:
                 return {
-                    'type': 'ir.actions.client',
-                    'tag': 'display_notification',
-                    'params': {
-                        'message': 'No products found to sync.',
-                        'type': 'warning',
-                    }
+                    "type": "ir.actions.client",
+                    "tag": "display_notification",
+                    "params": {
+                        "message": "No products found to sync.",
+                        "type": "warning",
+                    },
                 }
-            
+
             synced_count = 0
             failed_count = 0
-            
+
             for i in range(0, total_products, batch_size):
-                batch = products[i:i + batch_size]
+                batch = products[i : i + batch_size]
                 for product in batch:
                     try:
-                        product.with_context(skip_webhook=False)._send_webhook(product, "update")
+                        product.with_context(skip_webhook=False)._send_product(
+                            product, "update"
+                        )
                         synced_count += 1
                     except Exception as e:
                         failed_count += 1
                         print(f"Failed to sync product {product.name}: {str(e)}")
-                
+
                 request.env.cr.commit()
-            
+
             message = f"Sync completed: {synced_count} products synced"
             if failed_count > 0:
                 message += f", {failed_count} failed"
-                
+
             return {
-                'type': 'ir.actions.client',
-                'tag': 'display_notification',
-                'params': {
-                    'message': message,
-                    'type': 'success' if failed_count == 0 else 'warning',
-                }
+                "type": "ir.actions.client",
+                "tag": "display_notification",
+                "params": {
+                    "message": message,
+                    "type": "success" if failed_count == 0 else "warning",
+                },
             }
         except Exception as e:
             return {
-                'type': 'ir.actions.client',
-                'tag': 'display_notification',
-                'params': {
-                    'message': f'Error during sync: {str(e)}',
-                    'type': 'danger',
-                }
+                "type": "ir.actions.client",
+                "tag": "display_notification",
+                "params": {
+                    "message": f"Error during sync: {str(e)}",
+                    "type": "danger",
+                },
             }
