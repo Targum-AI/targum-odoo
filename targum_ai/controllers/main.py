@@ -5,7 +5,7 @@ from odoo.http import request
 
 class TargumController(http.Controller):
     @http.route(
-        "/targum_ai/products", type="http", auth="public", methods=["POST"], csrf=False
+        "/targum_ai/products", type="http", auth="none", methods=["POST"], csrf=False
     )
     def receive_products(self):
         auth_header = request.httprequest.headers.get("Authorization", "")
@@ -23,11 +23,11 @@ class TargumController(http.Controller):
             )
 
             if not api_key:
-                print("API key not configured in settings")
+                print("API key not configured in settings", flush=True)
                 return json.dumps({"error": "API key not configured", "status": 500})
 
             if token != api_key:
-                print(f"Invalid token provided")
+                print(f"Invalid token provided", flush=True)
                 return json.dumps({"error": "Invalid token", "status": 401})
 
             raw_data = request.httprequest.get_data(as_text=True)
@@ -45,17 +45,20 @@ class TargumController(http.Controller):
                     processed_products.append(processed_product)
                 except Exception as e:
                     print(
-                        f"Error processing product {product_data.get('id', 'unknown')}: {e}"
+                        f"Error processing product {product_data.get('id', 'unknown')}: {e}",
+                        flush=True,
                     )
                     continue
 
-            print(f"Successfully processed {len(processed_products)} products")
+            print(
+                f"Successfully processed {len(processed_products)} products", flush=True
+            )
             return json.dumps(
                 {"success": True, "processed_count": len(processed_products)}
             )
 
         except Exception as e:
-            print(f"General error in receive_products: {e}")
+            print(f"General error in receive_products: {e}", flush=True)
             return json.dumps({"error": "Failed to process products", "status": 500})
 
     def _process_product(self, product_data):
@@ -65,7 +68,7 @@ class TargumController(http.Controller):
                 raise ValueError(f"Missing required field: {field}")
 
         merchant_id = product_data["merchant_id"]
-        print(f"Processing product with merchant_id: {merchant_id})")
+        print(f"Processing product with merchant_id: {merchant_id})", flush=True)
 
         product_template = (
             request.env["product.template"]
@@ -91,11 +94,16 @@ class TargumController(http.Controller):
         }
 
         if product_template:
-            product_template.with_context(skip_webhook=True, skip_html_sanitize=True).write(vals)
+            product_template.with_context(
+                skip_webhook=True, skip_html_sanitize=True
+            ).write(vals)
             self._process_product_attributes(product_data, product_template)
             self._process_product_categories(product_data, product_template)
             self._process_product_keywords(product_data, product_template)
-            print(f"Updated product with merchant_id {product_data['merchant_id']}")
+            print(
+                f"Updated product with merchant_id {product_data['merchant_id']}",
+                flush=True,
+            )
             return {"action": "updated", "product_id": product_template.id}
         else:
             new_product = (
@@ -107,44 +115,53 @@ class TargumController(http.Controller):
             self._process_product_attributes(product_data, new_product)
             self._process_product_categories(product_data, new_product)
             self._process_product_keywords(product_data, new_product)
-            print(f"Created new product with merchant_id {new_product.id}")
+            print(f"Created new product with merchant_id {new_product.id}", flush=True)
             return {"action": "created", "product_id": new_product.id}
 
     def _process_product_attributes(self, product_data, product_template):
+        product_template.attribute_line_ids.unlink()
+
+        attributes_to_create = {}
+
         if "brands" in product_data and product_data["brands"]:
             for brand in product_data["brands"]:
                 brand_name = brand.get("name", "")
                 if brand_name:
-                    self._create_attribute("Brand", brand_name, product_template)
+                    if "Brand" not in attributes_to_create:
+                        attributes_to_create["Brand"] = []
+                    attributes_to_create["Brand"].append(brand_name)
 
-        if "attributes" not in product_data:
-            return
+        if "attributes" in product_data:
+            for attr_data in product_data["attributes"]:
+                attr_name = attr_data.get("name", {})
+                if isinstance(attr_name, dict):
+                    attr_name = attr_name.get("en", "")
 
-        for attr_data in product_data["attributes"]:
-            attr_name = attr_data.get("name", {})
-            if isinstance(attr_name, dict):
-                attr_name = attr_name.get("en", "")
+                if not attr_name:
+                    continue
 
-            if not attr_name:
-                continue
+                standardized_value = attr_data.get("standardized_text_value", {})
+                if isinstance(standardized_value, dict):
+                    standardized_value = standardized_value.get("en", "")
 
-            standardized_value = attr_data.get("standardized_text_value", {})
-            if isinstance(standardized_value, dict):
-                standardized_value = standardized_value.get("en", "")
+                value = standardized_value or attr_data.get("value", "")
+                unit = attr_data.get("unit", "")
 
-            value = standardized_value or attr_data.get("value", "")
-            unit = attr_data.get("unit", "")
+                if unit:
+                    value = f"{value} {unit}"
 
-            if unit:
-                value = f"{value} {unit}"
+                if not value or not value.strip():
+                    continue
 
-            if not value or not value.strip():
-                continue
+                if attr_name not in attributes_to_create:
+                    attributes_to_create[attr_name] = []
+                attributes_to_create[attr_name].append(value)
 
-            self._create_attribute(attr_name, value, product_template)
+        for attr_name, values in attributes_to_create.items():
+            self._create_attribute(attr_name, values, product_template)
 
-    def _create_attribute(self, attr_name, value, product_template):
-        """Helper method to create product attributes"""
+    def _create_attribute(self, attr_name, values, product_template):
+        """Helper method to create product attributes with all values at once"""
         attribute = (
             request.env["product.attribute"]
             .sudo()
@@ -158,36 +175,32 @@ class TargumController(http.Controller):
                 .create({"name": attr_name, "display_type": "select"})
             )
 
-        attr_value = (
-            request.env["product.attribute.value"]
-            .sudo()
-            .search(
-                [("attribute_id", "=", attribute.id), ("name", "=", value)], limit=1
-            )
-        )
-
-        if not attr_value:
+        value_ids = []
+        for value in values:
             attr_value = (
                 request.env["product.attribute.value"]
                 .sudo()
-                .create({"attribute_id": attribute.id, "name": value})
+                .search(
+                    [("attribute_id", "=", attribute.id), ("name", "=", value)], limit=1
+                )
             )
 
-        attr_line = product_template.attribute_line_ids.filtered(
-            lambda l: l.attribute_id.id == attribute.id
+            if not attr_value:
+                attr_value = (
+                    request.env["product.attribute.value"]
+                    .sudo()
+                    .create({"attribute_id": attribute.id, "name": value})
+                )
+
+            value_ids.append(attr_value.id)
+
+        request.env["product.template.attribute.line"].sudo().create(
+            {
+                "product_tmpl_id": product_template.id,
+                "attribute_id": attribute.id,
+                "value_ids": [(6, 0, value_ids)],
+            }
         )
-
-        if not attr_line:
-            request.env["product.template.attribute.line"].sudo().create(
-                {
-                    "product_tmpl_id": product_template.id,
-                    "attribute_id": attribute.id,
-                    "value_ids": [(6, 0, [attr_value.id])],
-                }
-            )
-        else:
-            if attr_value.id not in attr_line.value_ids.ids:
-                attr_line.write({"value_ids": [(4, attr_value.id)]})
 
     def _process_product_categories(self, product_data, product_template):
         """Process and assign product categories using Odoo's category system"""
@@ -221,7 +234,9 @@ class TargumController(http.Controller):
                     .create({"name": main_cat_name})
                 )
 
-            product_template.write({"categ_id": category.id})
+            product_template.with_context(skip_webhook=True).write(
+                {"categ_id": category.id}
+            )
 
         try:
             public_categories = []
@@ -247,7 +262,7 @@ class TargumController(http.Controller):
                     public_categories.append(pub_cat.id)
 
             if public_categories:
-                product_template.write(
+                product_template.with_context(skip_webhook=True).write(
                     {"public_categ_ids": [(6, 0, public_categories)]}
                 )
         except Exception:
@@ -284,15 +299,17 @@ class TargumController(http.Controller):
 
                 tag_ids.append(tag.id)
             except Exception as e:
-                print(f"Error processing tag '{keyword}': {str(e)}")
+                print(f"Error processing tag '{keyword}': {str(e)}", flush=True)
                 continue
 
-        print(f"Assigning tags: {tag_ids}")
+        print(f"Assigning tags: {tag_ids}", flush=True)
         if tag_ids:
             try:
-                product_template.write({"tag_ids": [(6, 0, tag_ids)]})
+                product_template.with_context(skip_webhook=True).write(
+                    {"product_tag_ids": [(6, 0, tag_ids)]}
+                )
             except Exception as e:
-                print(f"Error assigning tags to product: {str(e)}")
+                print(f"Error assigning tags to product: {str(e)}", flush=True)
 
     @http.route(
         "/targum_ai/sync_all_products", type="json", auth="user", methods=["POST"]
@@ -326,7 +343,10 @@ class TargumController(http.Controller):
                         synced_count += 1
                     except Exception as e:
                         failed_count += 1
-                        print(f"Failed to sync product {product.name}: {str(e)}")
+                        print(
+                            f"Failed to sync product {product.name}: {str(e)}",
+                            flush=True,
+                        )
 
                 request.env.cr.commit()
 
