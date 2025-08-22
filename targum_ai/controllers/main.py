@@ -76,27 +76,23 @@ class TargumController(http.Controller):
             .search([("id", "=", merchant_id)], limit=1)
         )
 
-        description_text = (
-            product_data.get("description", {}).get("en", "")
-            if isinstance(product_data.get("description"), dict)
-            else product_data.get("description", "")
-        )
+        name_data = product_data.get("name", {})
+        description_data = product_data.get("description", {})
 
-        name_text = (
-            product_data["name"].get("en", "")
-            if isinstance(product_data["name"], dict)
-            else product_data["name"]
-        )
+        if isinstance(name_data, dict):
+            name_text = name_data.get("en", "") or next(iter(name_data.values()), "")
+        else:
+            name_text = name_data or ""
 
-        vals = {
-            "name": name_text,
-            "description_sale": description_text,
-        }
+        if isinstance(description_data, dict):
+            description_text = description_data.get("en", "") or next(
+                iter(description_data.values()), ""
+            )
+        else:
+            description_text = description_data or ""
 
         if product_template:
-            product_template.with_context(
-                skip_webhook=True, skip_html_sanitize=True
-            ).write(vals)
+            self._save_product_translations(product_data, product_template)
             self._process_product_attributes(product_data, product_template)
             self._process_product_categories(product_data, product_template)
             self._process_product_keywords(product_data, product_template)
@@ -106,12 +102,18 @@ class TargumController(http.Controller):
             )
             return {"action": "updated", "product_id": product_template.id}
         else:
+            minimal_vals = {
+                "name": name_text or "Temp Name",
+                "description_sale": description_text,
+            }
             new_product = (
                 request.env["product.template"]
                 .sudo()
                 .with_context(skip_webhook=True, skip_html_sanitize=True)
-                .create(vals)
+                .create(minimal_vals)
             )
+
+            self._save_product_translations(product_data, new_product)
             self._process_product_attributes(product_data, new_product)
             self._process_product_categories(product_data, new_product)
             self._process_product_keywords(product_data, new_product)
@@ -133,16 +135,23 @@ class TargumController(http.Controller):
 
         if "attributes" in product_data:
             for attr_data in product_data["attributes"]:
-                attr_name = attr_data.get("name", {})
-                if isinstance(attr_name, dict):
-                    attr_name = attr_name.get("en", "")
+                attr_name_data = attr_data.get("name", {})
+
+                if isinstance(attr_name_data, dict):
+                    attr_name = attr_name_data.get("en", "") or next(
+                        iter(attr_name_data.values()), ""
+                    )
+                else:
+                    attr_name = attr_name_data or ""
 
                 if not attr_name:
                     continue
 
                 standardized_value = attr_data.get("standardized_text_value", {})
                 if isinstance(standardized_value, dict):
-                    standardized_value = standardized_value.get("en", "")
+                    standardized_value = standardized_value.get("en", "") or next(
+                        iter(standardized_value.values()), ""
+                    )
 
                 value = standardized_value or attr_data.get("value", "")
                 unit = attr_data.get("unit", "")
@@ -154,13 +163,18 @@ class TargumController(http.Controller):
                     continue
 
                 if attr_name not in attributes_to_create:
-                    attributes_to_create[attr_name] = []
-                attributes_to_create[attr_name].append(value)
+                    attributes_to_create[attr_name] = {
+                        "values": [],
+                        "name_data": attr_name_data,
+                    }
+                attributes_to_create[attr_name]["values"].append(value)
 
-        for attr_name, values in attributes_to_create.items():
-            self._create_attribute(attr_name, values, product_template)
+        for attr_name, attr_info in attributes_to_create.items():
+            self._create_attribute(
+                attr_name, attr_info["values"], product_template, attr_info["name_data"]
+            )
 
-    def _create_attribute(self, attr_name, values, product_template):
+    def _create_attribute(self, attr_name, values, product_template, name_data=None):
         """Helper method to create product attributes with all values at once"""
         attribute = (
             request.env["product.attribute"]
@@ -174,6 +188,9 @@ class TargumController(http.Controller):
                 .sudo()
                 .create({"name": attr_name, "display_type": "select"})
             )
+
+        if name_data and isinstance(name_data, dict):
+            self._save_record_translations(name_data, attribute)
 
         value_ids = []
         for value in values:
@@ -212,12 +229,18 @@ class TargumController(http.Controller):
             return
 
         main_cat_name = None
+        main_cat_name_data = None
         for cat in categories:
-            cat_name = cat.get("name", {})
-            if isinstance(cat_name, dict):
-                cat_name = cat_name.get("en", "")
+            cat_name_data = cat.get("name", {})
+            if isinstance(cat_name_data, dict):
+                cat_name = cat_name_data.get("en", "") or next(
+                    iter(cat_name_data.values()), ""
+                )
+            else:
+                cat_name = cat_name_data or ""
             if cat_name and not main_cat_name:
                 main_cat_name = cat_name
+                main_cat_name_data = cat_name_data
                 break
 
         if main_cat_name:
@@ -234,6 +257,9 @@ class TargumController(http.Controller):
                     .create({"name": main_cat_name})
                 )
 
+            if main_cat_name_data and isinstance(main_cat_name_data, dict):
+                self._save_record_translations(main_cat_name_data, category)
+
             product_template.with_context(skip_webhook=True).write(
                 {"categ_id": category.id}
             )
@@ -241,9 +267,13 @@ class TargumController(http.Controller):
         try:
             public_categories = []
             for cat in categories:
-                cat_name = cat.get("name", {})
-                if isinstance(cat_name, dict):
-                    cat_name = cat_name.get("en", "")
+                cat_name_data = cat.get("name", {})
+                if isinstance(cat_name_data, dict):
+                    cat_name = cat_name_data.get("en", "") or next(
+                        iter(cat_name_data.values()), ""
+                    )
+                else:
+                    cat_name = cat_name_data or ""
 
                 if cat_name:
                     pub_cat = (
@@ -258,6 +288,9 @@ class TargumController(http.Controller):
                             .sudo()
                             .create({"name": cat_name})
                         )
+
+                    if cat_name_data and isinstance(cat_name_data, dict):
+                        self._save_record_translations(cat_name_data, pub_cat)
 
                     public_categories.append(pub_cat.id)
 
@@ -310,6 +343,111 @@ class TargumController(http.Controller):
                 )
             except Exception as e:
                 print(f"Error assigning tags to product: {str(e)}", flush=True)
+
+    def _save_product_translations(self, product_data, product_template):
+        """Save product name and description translations for all received languages"""
+        try:
+            name_data = product_data.get("name", {})
+            description_data = product_data.get("description", {})
+
+            if not isinstance(name_data, dict) and not isinstance(
+                description_data, dict
+            ):
+                return
+
+            available_languages = (
+                request.env["res.lang"].sudo().search([("active", "=", True)])
+            )
+
+            lang_codes = [lang.code for lang in available_languages]
+
+            if isinstance(name_data, dict):
+                for targum_lang, translated_name in name_data.items():
+                    matching_lang = None
+                    for odoo_lang in lang_codes:
+                        if odoo_lang.startswith(targum_lang + "_"):
+                            matching_lang = odoo_lang
+                            break
+
+                    if matching_lang and translated_name and translated_name.strip():
+                        try:
+                            product_template.with_context(
+                                lang=matching_lang,
+                                skip_webhook=True,
+                                skip_html_sanitize=True,
+                            ).write({"name": translated_name})
+                            print(
+                                f"Saved name translation for {targum_lang} -> {matching_lang}: {translated_name}",
+                                flush=True,
+                            )
+                        except Exception as e:
+                            print(
+                                f"Error saving name translation for {targum_lang} -> {matching_lang}: {e}",
+                                flush=True,
+                            )
+
+            if isinstance(description_data, dict):
+                for targum_lang, translated_desc in description_data.items():
+                    matching_lang = None
+                    for odoo_lang in lang_codes:
+                        if odoo_lang.startswith(targum_lang + "_"):
+                            matching_lang = odoo_lang
+                            break
+
+                    if matching_lang and translated_desc and translated_desc.strip():
+                        try:
+                            product_template.with_context(
+                                lang=matching_lang,
+                                skip_webhook=True,
+                                skip_html_sanitize=True,
+                            ).write({"description_sale": translated_desc})
+                            print(
+                                f"Saved description translation for {targum_lang} -> {matching_lang}: {translated_desc[:50]}...",
+                                flush=True,
+                            )
+                        except Exception as e:
+                            print(
+                                f"Error saving description translation for {targum_lang} -> {matching_lang}: {e}",
+                                flush=True,
+                            )
+
+        except Exception as e:
+            print(f"Error in _save_product_translations: {str(e)}", flush=True)
+
+    def _save_record_translations(self, name_data, record):
+        """Save translations for any Odoo record (category, attribute, etc.)"""
+        if not isinstance(name_data, dict):
+            return
+
+        try:
+            available_languages = (
+                request.env["res.lang"].sudo().search([("active", "=", True)])
+            )
+            lang_codes = [lang.code for lang in available_languages]
+
+            for targum_lang, translated_name in name_data.items():
+                matching_lang = None
+                for odoo_lang in lang_codes:
+                    if odoo_lang.startswith(targum_lang + "_"):
+                        matching_lang = odoo_lang
+                        break
+
+                if matching_lang and translated_name and translated_name.strip():
+                    try:
+                        record.with_context(lang=matching_lang).write(
+                            {"name": translated_name}
+                        )
+                        print(
+                            f"Saved translation for {record._name} ({targum_lang} -> {matching_lang}): {translated_name}",
+                            flush=True,
+                        )
+                    except Exception as e:
+                        print(
+                            f"Error saving translation for {record._name} ({targum_lang}): {e}",
+                            flush=True,
+                        )
+        except Exception as e:
+            print(f"Error in _save_record_translations: {str(e)}", flush=True)
 
     @http.route(
         "/targum_ai/sync_all_products", type="json", auth="user", methods=["POST"]

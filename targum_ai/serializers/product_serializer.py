@@ -4,7 +4,11 @@ from odoo.http import request
 class ProductSerializer:
     @staticmethod
     def serialize_product(
-        product, include_variants=True, include_images=True, base_url=None
+        product,
+        include_variants=True,
+        include_images=True,
+        base_url=None,
+        lang_code="en",
     ):
         if base_url is None and hasattr(request, "httprequest"):
             base_url = request.httprequest.url_root.rstrip("/")
@@ -51,13 +55,31 @@ class ProductSerializer:
         if hasattr(product, "volume") and product.volume:
             metadata.append({"key": "volume", "value": str(product.volume)})
 
-        product_data = {
-            "id": product.id,
-            "name": product.name,
-            "description": product.website_description
+        product_name = product.name or ""
+        product_description = (
+            product.website_description
             or product.description_sale
             or product.description
-            or "",
+            or ""
+        )
+
+        if lang_code != "en" and hasattr(product.env, "lang"):
+            try:
+                product_localized = product.with_context(lang=lang_code)
+                product_name = product_localized.name or product_name
+                product_description = (
+                    product_localized.website_description
+                    or product_localized.description_sale
+                    or product_localized.description
+                    or product_description
+                )
+            except:
+                pass
+
+        product_data = {
+            "id": product.id,
+            "name": product_name,
+            "description": product_description,
             "images": images,
             "category": category,
             "attributes": attributes,
@@ -94,7 +116,12 @@ class ProductSerializer:
 
     @staticmethod
     def build_webhook_data(product, action, **kwargs):
-        webhook_kwargs = {"include_variants": False, "include_images": True, **kwargs}
+        webhook_kwargs = {
+            "include_variants": False,
+            "include_images": True,
+            "lang_code": "en",
+            **kwargs,
+        }
 
         product_data = ProductSerializer.serialize_product(product, **webhook_kwargs)
 

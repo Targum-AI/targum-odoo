@@ -1,154 +1,300 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Targum AI Integration</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Targum AI Integration - Odoo Module</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
       rel="stylesheet"
-      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
     />
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              "targum-orange": "#ff6b35",
+              "targum-orange-light": "#f7931e",
+              "targum-dark": "#1a1a1a",
+              "targum-gray": "#2a2a2a",
+            },
+          },
+        },
+      };
+    </script>
   </head>
-  <body>
-    <div class="container mt-4">
-      <div class="row">
-        <div class="col-12">
-          <h1 class="text-center mb-4">Targum AI Integration</h1>
-          <p class="lead text-center">
-            Import products to Targum AI for enrichment and sync back to Odoo
+  <body class="bg-targum-dark font-sans text-white">
+    <div
+      class="bg-gradient-to-br from-targum-dark via-targum-gray to-targum-dark"
+    >
+      <div class="max-w-6xl mx-auto px-6 py-16">
+        <div class="text-center">
+          <div
+            class="inline-flex items-center bg-targum-orange/10 backdrop-blur-sm rounded-full px-4 py-2 mb-6 border border-targum-orange/20"
+          >
+            <i class="fas fa-robot text-targum-orange mr-2"></i>
+            <span class="text-sm font-medium text-targum-orange"
+              >AI-Powered Product Enrichment</span
+            >
+          </div>
+          <h1 class="text-5xl font-bold mb-6 leading-tight text-white">
+            Targum AI Integration
+          </h1>
+          <p
+            class="text-xl text-gray-300 mb-8 max-w-2xl mx-auto leading-relaxed"
+          >
+            Transform your Odoo product catalog with AI-powered enrichment.
+            Export, enhance, and sync your products seamlessly.
           </p>
         </div>
       </div>
+    </div>
 
-      <div class="row mt-5">
-        <div class="col-md-6">
-          <h2>Key Features</h2>
-          <ul class="list-unstyled">
-            <li class="mb-2">
-              <i class="fa fa-check text-success"></i>
-              <strong>Product Export:</strong> Export products from Odoo to
-              Targum AI platform
-            </li>
-            <li class="mb-2">
-              <i class="fa fa-check text-success"></i>
-              <strong>AI Enrichment:</strong> Automatically enrich product data
-              using AI
-            </li>
-            <li class="mb-2">
-              <i class="fa fa-check text-success"></i>
-              <strong>Data Sync:</strong> Import enriched products back to Odoo
-              seamlessly
-            </li>
-            <li class="mb-2">
-              <i class="fa fa-check text-success"></i>
-              <strong>Easy Configuration:</strong> Simple setup through Odoo's
-              settings interface
-            </li>
-          </ul>
-        </div>
-        <div class="col-md-6">
-          <h2>Benefits</h2>
-          <ul class="list-unstyled">
-            <li class="mb-2">
-              <i class="fa fa-star text-warning"></i> Improve product data
-              quality
-            </li>
-            <li class="mb-2">
-              <i class="fa fa-star text-warning"></i> Increase sales through
-              better product presentation
-            </li>
-            <li class="mb-2">
-              <i class="fa fa-star text-warning"></i> Save time on manual
-              product management
-            </li>
-            <li class="mb-2">
-              <i class="fa fa-star text-warning"></i> Streamline product data
-              management workflow
-            </li>
-          </ul>
-        </div>
-      </div>
-
-      <div class="row mt-5">
-        <div class="col-12">
-          <h2>How It Works</h2>
-          <div class="row">
-            <div class="col-md-4 text-center mb-3">
-              <div class="card h-100">
-                <div class="card-body">
-                  <h5 class="card-title">1. Export</h5>
-                  <p class="card-text">
-                    Export your products from Odoo to the Targum AI platform
-                  </p>
-                </div>
+    <div class="max-w-6xl mx-auto px-6 py-16">
+      <div class="grid md:grid-cols-2 gap-12 items-start">
+        <div>
+          <h2 class="text-3xl font-bold text-white mb-8">Key Features</h2>
+          <div class="space-y-6">
+            <div class="flex items-start gap-4">
+              <div
+                class="bg-green-500/20 text-green-400 p-2 w-12 h-12 flex justify-center items-center rounded-lg border border-green-500/30"
+              >
+                <i class="fas fa-upload text-lg"></i>
+              </div>
+              <div>
+                <h3 class="font-semibold text-white mb-2">Product Export</h3>
+                <p class="text-gray-300">
+                  Export products from Odoo to Targum AI platform with one click
+                </p>
               </div>
             </div>
-            <div class="col-md-4 text-center mb-3">
-              <div class="card h-100">
-                <div class="card-body">
-                  <h5 class="card-title">2. Enrich</h5>
-                  <p class="card-text">
-                    AI analyzes and enriches your product data
-                  </p>
-                </div>
+            <div class="flex items-start gap-4">
+              <div
+                class="bg-targum-orange/20 text-targum-orange p-2 w-12 h-12 flex justify-center items-center rounded-lg border border-targum-orange/30"
+              >
+                <i class="fas fa-brain text-lg"></i>
+              </div>
+              <div>
+                <h3 class="font-semibold text-white mb-2">AI Enrichment</h3>
+                <p class="text-gray-300">
+                  Automatically enrich product data using advanced AI algorithms
+                </p>
               </div>
             </div>
-            <div class="col-md-4 text-center mb-3">
-              <div class="card h-100">
-                <div class="card-body">
-                  <h5 class="card-title">3. Import</h5>
-                  <p class="card-text">
-                    Sync the enriched products back to your Odoo catalog
-                  </p>
-                </div>
+            <div class="flex items-start gap-4">
+              <div
+                class="bg-purple-500/20 text-purple-400 p-2 w-12 h-12 flex justify-center items-center rounded-lg border border-purple-500/30"
+              >
+                <i class="fas fa-sync text-lg"></i>
+              </div>
+              <div>
+                <h3 class="font-semibold text-white mb-2">Data Sync</h3>
+                <p class="text-gray-300">
+                  Import enriched products back to Odoo seamlessly
+                </p>
+              </div>
+            </div>
+            <div class="flex items-start gap-4">
+              <div
+                class="bg-blue-500/20 text-blue-400 p-2 w-12 h-12 flex justify-center items-center rounded-lg border border-blue-500/30"
+              >
+                <i class="fas fa-cog text-lg"></i>
+              </div>
+              <div>
+                <h3 class="font-semibold text-white mb-2">
+                  Easy Configuration
+                </h3>
+                <p class="text-gray-300">
+                  Simple setup through Odoo's settings interface
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h2 class="text-3xl font-bold text-white mb-8">Benefits</h2>
+          <div
+            class="bg-gradient-to-br from-targum-orange/10 to-targum-orange-light/10 p-8 rounded-2xl border border-targum-orange/20"
+          >
+            <div class="space-y-4">
+              <div class="flex items-center gap-3">
+                <i class="fas fa-star text-targum-orange"></i>
+                <span class="text-gray-200">Improve product data quality</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <i class="fas fa-star text-targum-orange"></i>
+                <span class="text-gray-200"
+                  >Increase sales through better product presentation</span
+                >
+              </div>
+              <div class="flex items-center gap-3">
+                <i class="fas fa-star text-targum-orange"></i>
+                <span class="text-gray-200"
+                  >Save time on manual product management</span
+                >
+              </div>
+              <div class="flex items-center gap-3">
+                <i class="fas fa-star text-targum-orange"></i>
+                <span class="text-gray-200"
+                  >Streamline product data management workflow</span
+                >
               </div>
             </div>
           </div>
         </div>
       </div>
+    </div>
 
-      <div class="row mt-5">
-        <div class="col-12">
-          <h2>Requirements</h2>
-          <ul>
-            <li>Odoo 17.0 or later</li>
-            <li>Targum AI subscription</li>
-          </ul>
-        </div>
-      </div>
-
-      <div class="row mt-5">
-        <div class="col-12">
-          <h2>Installation</h2>
-          <ol>
-            <li>Install the module through the Odoo Apps interface</li>
-            <li>Go to Settings → General Settings</li>
-            <li>Scroll down to find the "Targum AI" section</li>
-            <li>
-              Set your <strong>Targum Instance URL</strong> (e.g.,
-              https://your-targum-instance.com)
-            </li>
-            <li>Copy the generated <strong>API key</strong></li>
-            <li>
-              In Targum Nova, create an Integration and paste the API key as the
-              Merchant secret
-            </li>
-            <li>
-              Generate an API token in Targum and copy it to the
-              <strong>Integration Secret</strong> field in Odoo
-            </li>
-            <li>Save the configuration</li>
-          </ol>
-        </div>
-      </div>
-
-      <div class="row mt-5">
-        <div class="col-12">
-          <h2>Support</h2>
-          <p>
-            For support and questions, please contact us at
-            <a href="mailto:info@targum.ai">info@targum.ai</a>
+    <div class="bg-targum-gray py-16">
+      <div class="max-w-6xl mx-auto px-6">
+        <div class="text-center mb-12">
+          <h2 class="text-3xl font-bold text-white mb-4">How It Works</h2>
+          <p class="text-gray-300 max-w-2xl mx-auto">
+            Simple three-step process to transform your product catalog
           </p>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-8">
+          <div class="text-center group">
+            <div
+              class="bg-gradient-to-br from-targum-orange to-targum-orange-light w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform"
+            >
+              <i class="fas fa-upload text-white text-xl"></i>
+            </div>
+            <div
+              class="bg-targum-dark p-6 rounded-xl h-full border border-gray-700"
+            >
+              <h3 class="text-xl font-semibold text-white mb-3">1. Export</h3>
+              <p class="text-gray-300">
+                Export your products from Odoo to the Targum AI platform with a
+                single click
+              </p>
+            </div>
+          </div>
+
+          <div class="text-center group">
+            <div
+              class="bg-gradient-to-br from-targum-orange-light to-targum-orange w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform"
+            >
+              <i class="fas fa-brain text-white text-xl"></i>
+            </div>
+            <div
+              class="bg-targum-dark p-6 rounded-xl h-full border border-gray-700"
+            >
+              <h3 class="text-xl font-semibold text-white mb-3">2. Enrich</h3>
+              <p class="text-gray-300">
+                AI analyzes and enriches your product data with enhanced
+                descriptions and attributes
+              </p>
+            </div>
+          </div>
+
+          <div class="text-center group">
+            <div
+              class="bg-gradient-to-br from-targum-orange to-targum-orange-light w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform"
+            >
+              <i class="fas fa-download text-white text-xl"></i>
+            </div>
+            <div
+              class="bg-targum-dark p-6 rounded-xl h-full border border-gray-700"
+            >
+              <h3 class="text-xl font-semibold text-white mb-3">3. Import</h3>
+              <p class="text-gray-300">
+                Sync the enriched products back to your Odoo catalog
+                automatically
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="max-w-6xl mx-auto px-6 py-16">
+      <div class="grid md:grid-cols-2 gap-12">
+        <div>
+          <h2 class="text-3xl font-bold text-white mb-6">Requirements</h2>
+          <div class="bg-targum-gray p-6 rounded-xl border border-gray-600">
+            <ul class="space-y-3">
+              <li class="flex items-center gap-3">
+                <i class="fas fa-check-circle text-targum-orange"></i>
+                <span class="text-gray-200">Odoo 17.0 or later</span>
+              </li>
+              <li class="flex items-center gap-3">
+                <i class="fas fa-check-circle text-targum-orange"></i>
+                <span class="text-gray-200">Targum AI subscription</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div>
+          <h2 class="text-3xl font-bold text-white mb-6">Installation</h2>
+          <div class="bg-targum-gray p-6 rounded-xl border border-gray-600">
+            <ol class="space-y-4 text-sm text-gray-200">
+              <li class="flex gap-3">
+                <span
+                  class="bg-targum-orange text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5"
+                  >1</span
+                >
+                <span>Install the module through the Odoo Apps interface</span>
+              </li>
+              <li class="flex gap-3">
+                <span
+                  class="bg-targum-orange text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5"
+                  >2</span
+                >
+                <span>Go to Settings → General Settings</span>
+              </li>
+              <li class="flex gap-3">
+                <span
+                  class="bg-targum-orange text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5"
+                  >3</span
+                >
+                <span
+                  >Find the "Targum AI" section and configure your instance
+                  URL</span
+                >
+              </li>
+              <li class="flex gap-3">
+                <span
+                  class="bg-targum-orange text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5"
+                  >4</span
+                >
+                <span
+                  >Set up API keys and integration secrets as instructed</span
+                >
+              </li>
+              <li class="flex gap-3">
+                <span
+                  class="bg-targum-orange text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5"
+                  >5</span
+                >
+                <span
+                  >Save configuration and start enriching your products!</span
+                >
+              </li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-black py-16">
+      <div class="max-w-6xl mx-auto px-6 text-center">
+        <h2 class="text-3xl font-bold mb-4 text-white">Need Support?</h2>
+        <p class="text-gray-400 mb-8 max-w-2xl mx-auto">
+          Our team is here to help you get the most out of your Targum AI
+          integration
+        </p>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+          <div
+            class="bg-targum-orange hover:bg-targum-orange-light text-white px-8 py-3 rounded-lg font-semibold transition-colors inline-flex items-center justify-center gap-2"
+          >
+            <i class="fas fa-envelope"></i>
+            info@targum.ai
+          </div>
         </div>
       </div>
     </div>
