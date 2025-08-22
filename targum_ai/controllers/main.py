@@ -154,10 +154,6 @@ class TargumController(http.Controller):
                     )
 
                 value = standardized_value or attr_data.get("value", "")
-                unit = attr_data.get("unit", "")
-
-                if unit:
-                    value = f"{value} {unit}"
 
                 if not value or not value.strip():
                     continue
